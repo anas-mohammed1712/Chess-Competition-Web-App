@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProChess Manager v4.5 - النسخة الكاملة</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --success: #27ae60;
+            --danger: #e74c3c;
+            --bg: #f4f7f6;
+            --white: #ffffff;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: var(--primary); }
+        .container { max-width: 1100px; margin: 0 auto; background: var(--white); padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        
+        h1, h2, h3 { border-bottom: 2px solid var(--bg); padding-bottom: 10px; }
+        .section { margin-bottom: 30px; }
+        
+        input, textarea, select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; margin-top: 5px; margin-bottom: 15px; font-size: 16px; }
+        button { padding: 12px 20px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; margin: 5px; }
+        
+        .btn-main { background: var(--accent); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-outline { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+        th, td { text-align: right; padding: 12px; border-bottom: 1px solid #eee; }
+        th { background: var(--bg); }
+
+        .pairing-row { display: flex; align-items: center; justify-content: space-between; padding: 15px; background: #fafafa; border: 1px solid #eee; margin-bottom: 8px; border-radius: 8px; }
+        .pairing-row select { width: auto; margin: 0 15px; }
+        
+        .bye-notice { background: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ffeeba; font-weight: bold; }
+        .history-card { background: #fdfdfd; padding: 20px; border: 1px solid #e0e0e0; margin-bottom: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .archive-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid #eee; margin-bottom: 10px; border-radius: 8px; background: #fff; }
+        
+        .hidden { display: none; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+        .w { background: #eee; color: #333; } .b { background: #333; color: #eee; }
+        .site-label { font-size: 10px; color: #7f8c8d; background: #ebedef; padding: 2px 5px; border-radius: 3px; }
+        
+        @media print { .no-print { display: none !important; } }
+        #transferSection {
+    margin-top: 20px;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+#transferSection h3 {
+    border: none;
+    margin: 0;
+}
+
+.hidden {
+    display: none;
+}
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="homeScreen" class="section">
+        <h1>♟️ ProChess Manager الاحترافي v4.5</h1>
+        <button class="btn-main" onclick="showSection('setup')">إنشاء بطولة جديدة +</button>
+        <button class="btn-outline" onclick="loadArchive()">سجل البطولات المحفوظة 📁</button>
+    </div>
+
+    <div id="setup" class="section hidden">
+        <button class="btn-outline no-print" onclick="showSection('homeScreen')">← العودة</button>
+        <h2>إعداد بطولة جديدة</h2>
+        <input type="text" id="tourneyName" placeholder="اسم البطولة">
+        <select id="format">
+            <option value="swiss">النظام السويسري (FIDE Swiss)</option>
+            <option value="roundrobin">الكل ضد الكل (Round Robin)</option>
+            <option value="cup">خروج المغلوب (مع تحديد المركز الثالث)</option>
+        </select>
+        <p><small>تنسيق الإدخال: <b>الاسم, التقييم, المنصة (chess أو lichess)</b></small></p>
+        <textarea id="playerList" rows="8" placeholder="أحمد علي, 1800, lichess&#10;سارة يوسف, 1700, chess"></textarea>
+        <button class="btn-success" onclick="initTournament()">ابدأ البطولة</button>
+    </div>
+
+    <div id="archive" class="section hidden">
+        <button class="btn-outline" onclick="showSection('homeScreen')">← العودة</button>
+        <h2>البطولات السابقة</h2>
+        <div id="archiveList"></div>
+    </div>
+
+    <div id="tournamentArea" class="section hidden">
+        <div class="no-print" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+            <button class="btn-outline" onclick="confirmExit()">🏠 الرئيسية</button>
+            <h2 id="displayTourneyName">اسم البطولة</h2>
+            <div>
+                <button class="btn-main" onclick="showHistory()">عرض كل الجولات 📜</button>
+                <button class="btn-success" onclick="manualSave()">حفظ البطولة 💾</button>
+            </div>
+        </div>
+
+        <div id="activeRoundView">
+            <h3 id="roundTitle">الجولة 1</h3>
+            <div id="byeContainer"></div>
+            <div id="pairingsContainer"></div>
+            
+            <div class="no-print" style="margin-top: 20px;">
+                <button id="nextRoundBtn" class="btn-main" onclick="generateNextRound()">توليد الجولة التالية »</button>
+                <button class="btn-outline" onclick="exportCSV()">تصدير CSV</button>
+                <button class="btn-outline" onclick="window.print()">طباعة</button>
+            </div>
+        </div>
+
+        <div id="historyView" class="hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>سجل جولات البطولة الكامل</h3>
+                <button class="btn-danger" onclick="hideHistory()">إغلاق السجل ×</button>
+            </div>
+            <div id="historyContent"></div>
+        </div>
+
+        <h2>جدول الترتيب الحالي</h2>
+        <table id="standingsTable">
+         <thead>
+            <tr>
+                <th>مركز</th>
+                <th>اللاعب</th>
+                <th>التقييم</th>
+                <th>النقاط</th>
+                <th title="Performance Rating">معدل الأداء</th>
+                <th id="tiebreakHeader">SB كسر تعادل</th>
+            </tr>
+        </thead>
+            
+            <tbody></tbody>
+        </table>
+    </div>
+    <button class="btn-outline" onclick="toggleTransferUI()">نقل البيانات (استيراد/تصدير) ⚙️</button>
+
+<div id="transferSection" class="section hidden" style="border: 2px dashed var(--accent); padding: 20px; background: #f9f9f9;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3>نظام نقل البيانات</h3>
+        <button class="btn-danger" onclick="toggleTransferUI()">إغلاق ×</button>
+    </div>
+    
+    <p>يمكنك تصدير بياناتك كملف JSON للاحتفاظ بنسخة احتياطية، أو استيراد بيانات من ملف سابق.</p>
+    
+    <div style="display: flex; gap: 10px;">
+        <button class="btn-main" onclick="exportData()">تصدير البيانات (Download JSON) ↓</button>
+        
+        <button class="btn-success" onclick="document.getElementById('importFile').click()">استيراد بيانات (Upload JSON) ↑</button>
+        <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData(event)">
+    </div>
+</div>
+</div>
+
+<script>
+/** الحالة العامة للنظام **/
+let state = {
+    id: null,
+    name: "",
+    players: [],
+    rounds: [],
+    currentRoundIdx: -1,
+    format: '',
+    maxRounds: 0,
+    finished: false
+};
+
+function showSection(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+    document.getElementById(id).classList.remove('hidden');
+}
+
+/** بدء البطولة وتحويل التقييمات **/
+function initTournament() {
+    const nameInput = document.getElementById('tourneyName').value.trim();
+    const playerInput = document.getElementById('playerList').value.trim();
+    if (!nameInput || !playerInput) return alert("أكمل البيانات");
+
+    let players = playerInput.split('\n').filter(l => l.trim() !== "").map((line, idx) => {
+        let parts = line.split(',');
+        let name = parts[0]?.trim() || `لاعب ${idx + 1}`;
+        let rawRating = parseInt(parts[1]) || 1200;
+        let site = parts[2]?.trim().toLowerCase() || 'chess';
+        let finalRating = (site === 'lichess') ? rawRating - 200 : rawRating;
+
+        return {
+            id: idx,
+            name: name,
+            rating: finalRating,
+            displaySite: site,
+            points: 0,
+            sbScore: 0,
+            opponents: [],
+            receivedBye: false,
+            colorBalance: 0,
+            eliminated: false,
+            lastRoundLost: -1
+        };
+    });
+
+    state = {
+        id: Date.now(),
+        name: nameInput,
+        players: players,
+        rounds: [],
+        currentRoundIdx: -1,
+        format: document.getElementById('format').value,
+        finished: false
+    };
+
+    if (state.format === 'roundrobin') state.maxRounds = (players.length % 2 === 0) ? players.length - 1 : players.length;
+    else state.maxRounds = Math.ceil(Math.log2(players.length)) + 1; // زيادة احتياطية
+
+    document.getElementById('displayTourneyName').innerText = state.name;
+    document.getElementById('tiebreakHeader').innerText = state.format === 'cup' ? 'الحالة' : 'SB كسر تعادل';
+    
+    showSection('tournamentArea');
+    generateNextRound();
+}
+
+/** توليد الجولات والتعامل مع الـ Bye **/
+function generateNextRound() {
+    state.currentRoundIdx++;
+    let byePlayer = null;
+    let participants = [];
+
+    if (state.format === 'cup') {
+        participants = state.players.filter(p => !p.eliminated);
+        if (participants.length === 1) {
+            state.finished = true;
+            renderUI(); return;
+        }
+    } else {
+        participants = [...state.players];
+    }
+
+    // منطق الـ Bye: الأقل نقاطاً ثم الأقل تقييماً
+    if (participants.length % 2 !== 0) {
+        let candidates = participants.filter(p => !p.receivedBye)
+            .sort((a, b) => a.points - b.points || a.rating - b.rating);
+        
+        byePlayer = candidates.length > 0 ? candidates[0] : participants[participants.length - 1];
+        byePlayer.receivedBye = true;
+        participants = participants.filter(p => p.id !== byePlayer.id);
+    }
+
+    let pairings = [];
+    if (state.format === 'swiss') pairings = pairSwiss(participants);
+    else if (state.format === 'roundrobin') pairings = pairRoundRobin(participants);
+    else pairings = pairCup(participants);
+
+    state.rounds.push({ round: state.currentRoundIdx + 1, games: pairings, bye: byePlayer });
+    calculateStats();
+    renderUI();
+}
+/** خوارزمية السويسري المحدثة: منع تكرار اللون للمرة الثالثة (FIDE Strict) **/
+function pairSwiss(parts) {
+    let sorted = [...parts].sort((a, b) => b.points - a.points || b.rating - a.rating);
+    let paired = [], used = new Set();
+
+    // 1. نظام الجولة الأولى (FIDE Split)
+    const isFirstRound = state.currentRoundIdx === 0;
+    if (isFirstRound) {
+        let half = Math.ceil(sorted.length / 2);
+        let topHalf = sorted.slice(0, half);
+        let bottomHalf = sorted.slice(half);
+        for (let i = 0; i < topHalf.length; i++) {
+            let white = topHalf[i], black = bottomHalf[i];
+            if (black) {
+                if (i % 2 !== 0) [white, black] = [black, white];
+                paired.push({ white, black, result: null });
+                used.add(white.id); used.add(black.id);
+            }
+        }
+    }
+
+    // 2. نظام المزاوجة للجولات التالية مع قيد الألوان الصارم
+    for (let i = 0; i < sorted.length; i++) {
+        if (used.has(sorted[i].id)) continue;
+        let p1 = sorted[i], p2 = null;
+
+        for (let j = i + 1; j < sorted.length; j++) {
+            if (!used.has(sorted[j].id) && !p1.opponents.includes(sorted[j].id)) {
+                p2 = sorted[j]; break;
+            }
+        }
+        
+        if (!p2) { // بحث اضطراري
+            for (let j = i + 1; j < sorted.length; j++) if(!used.has(sorted[j].id)) { p2 = sorted[j]; break; }
+        }
+
+        if (p2) {
+            let white, black;
+            
+            // --- قيد الألوان الصارم (Strict Color Constraint) ---
+            // نحصل على آخر لونين لعبهما كل لاعب من سجل الجولات
+            let p1LastTwo = getPlayerColorHistory(p1.id).slice(-2).join('');
+            let p2LastTwo = getPlayerColorHistory(p2.id).slice(-2).join('');
+
+            // إذا لعب p1 مرتين أبيض، يجب أن يأخذ أسود (إلا إذا كان p2 أيضاً لعب مرتين أسود، هنا تقع معضلة قانونية)
+            if (p1LastTwo === 'WW' || p2LastTwo === 'BB') {
+                white = p2; black = p1;
+            } else if (p1LastTwo === 'BB' || p2LastTwo === 'WW') {
+                white = p1; black = p2;
+            } else {
+                // الموازنة العادية إذا لم يوجد خطر التكرار الثالث
+                if (p1.colorBalance > p2.colorBalance) { white = p2; black = p1; }
+                else { white = p1; black = p2; }
+            }
+
+            paired.push({ white, black, result: null });
+            used.add(p1.id); used.add(p2.id);
+        }
+    }
+    return paired;
+}
+
+/** دالة مساعدة للحصول على تاريخ ألوان اللاعب من الجولات السابقة **/
+function getPlayerColorHistory(playerId) {
+    let history = [];
+    state.rounds.forEach(r => {
+        r.games.forEach(g => {
+            if (g.white.id === playerId) history.push('W');
+            if (g.black.id === playerId) history.push('B');
+        });
+    });
+    return history;
+}
+/** خوارزمية الدوري (Round Robin) **/
+function pairRoundRobin(parts) {
+    let circle = [...parts];
+    const n = circle.length;
+    const rot = state.currentRoundIdx;
+    for(let i=0; i<rot; i++) circle.splice(1, 0, circle.pop());
+    let paired = [];
+    for (let i = 0; i < n / 2; i++) {
+        let p1 = circle[i], p2 = circle[n - 1 - i];
+        if ((i + state.currentRoundIdx) % 2 === 0) paired.push({ white: p1, black: p2, result: null });
+        else paired.push({ white: p2, black: p1, result: null });
+    }
+    return paired;
+}
+
+/** نظام الكأس مع مباراة المركز الثالث **/
+/** نظام الكأس المطور لمنع تكرار المسميات **/
+/** نظام الكأس الاحترافي (Cup System) **/
+function pairCup(parts) {
+    let paired = [];
+    
+    // 1. حساب عدد الجولات الإجمالية المطلوبة بناءً على عدد اللاعبين الأصلي
+    // في نظام الكأس، عدد الجولات = log2 لعدد اللاعبين (مقرباً للأعلى)
+    const totalCupRounds = Math.ceil(Math.log2(state.players.length));
+    const isLastRound = (state.currentRoundIdx + 1 === totalCupRounds);
+    const isSemiFinalRound = (state.currentRoundIdx + 2 === totalCupRounds);
+
+    // 2. حالة النهائي وتحديد المركز الثالث
+    // تظهر فقط في الجولة الأخيرة المخطط لها
+    if (isLastRound && parts.length === 2) {
+        let finalists = [...parts];
+        let losersOfSemi = state.players.filter(p => p.eliminated && p.lastRoundLost === state.currentRoundIdx);
+        
+        paired.push({ 
+            white: finalists[0], 
+            black: finalists[1], 
+            result: null, 
+            type: 'مباراة النهائي 🏆' 
+        });
+
+        if (losersOfSemi.length >= 2) {
+            paired.push({ 
+                white: losersOfSemi[0], 
+                black: losersOfSemi[1], 
+                result: null, 
+                type: 'تحديد المركز الثالث 🥉' 
+            });
+        }
+    } 
+    // 3. تسمية نصف النهائي تلقائياً إذا كان هناك 4 لاعبين متبقين في الجولة قبل الأخيرة
+    else if (isSemiFinalRound && parts.length === 4) {
+        for (let i = 0; i < parts.length; i += 2) {
+            paired.push({ white: parts[i], black: parts[i+1], result: null, type: 'نصف النهائي' });
+        }
+    }
+    // 4. المزاوجة العادية للأدوار التمهيدية
+    else {
+        for (let i = 0; i < parts.length; i += 2) {
+            if (parts[i+1]) {
+                paired.push({ white: parts[i], black: parts[i+1], result: null });
+            }
+        }
+    }
+    return paired;
+}
+/** تحديث النتائج وحساب النقاط والـ SB **/
+function updateResult(gameIdx, val) {
+    let round = state.rounds[state.currentRoundIdx];
+    let game = round.games[gameIdx];
+    game.result = val;
+
+    if (state.format === 'cup') {
+        if (val === '1-0') { game.black.eliminated = true; game.black.lastRoundLost = state.currentRoundIdx + 1; }
+        else if (val === '0-1') { game.white.eliminated = true; game.white.lastRoundLost = state.currentRoundIdx + 1; }
+        else if (val === '0-0') { game.white.eliminated = true; game.black.eliminated = true; }
+        if (val === '1/2-1/2') { alert("الكأس يتطلب فائزاً!"); game.result = null; return; }
+    }
+
+    calculateStats();
+    saveToLocalStorage();
+    renderUI();
+}
+
+function calculateStats() {
+    // المرحلة 1: تصفير وحساب النقاط الأساسية وتاريخ المواجهات فقط
+    state.players.forEach(p => { 
+        p.points = 0; 
+        p.sbScore = 0; 
+        p.opponents = []; 
+        p.colorBalance = 0; 
+    });
+
+    state.rounds.forEach(r => {
+        if (r.bye) { 
+            let p = state.players.find(x => x.id === r.bye.id); 
+            if(p) p.points += 1; 
+        }
+        r.games.forEach(g => {
+            let w = state.players.find(x => x.id === g.white.id);
+            let b = state.players.find(x => x.id === g.black.id);
+            if(!w || !b) return;
+            w.opponents.push(b.id); 
+            b.opponents.push(w.id);
+            if (g.result === '1-0') { w.points += 1; w.colorBalance++; b.colorBalance--; }
+            else if (g.result === '0-1') { b.points += 1; b.colorBalance++; w.colorBalance--; }
+            else if (g.result === '1/2-1/2') { w.points += 0.5; b.points += 0.5; }
+        });
+    });
+
+    // المرحلة 2: الآن بعد أن استقرت نقاط الجميع، نحسب الـ SB بدقة
+    if (state.format !== 'cup') {
+        state.players.forEach(p => {
+            state.rounds.forEach(r => {
+                r.games.forEach(g => {
+                    let isWhite = (g.white.id === p.id);
+                    let isBlack = (g.black.id === p.id);
+                    if (!isWhite && !isBlack) return; // اللاعب ليس طرفاً في هذه المباراة
+
+                    let opp = isWhite ? state.players.find(x => x.id === g.black.id) : state.players.find(x => x.id === g.white.id);
+                    if (!opp || !g.result) return;
+
+                    // تطبيق قواعد Sonneborn-Berger
+                    if ((isWhite && g.result === '1-0') || (isBlack && g.result === '0-1')) {
+                        p.sbScore += opp.points;
+                    } else if (g.result === '1/2-1/2') {
+                        p.sbScore += (opp.points * 0.5);
+                    }
+                });
+            });
+        });
+    }
+}
+/** عرض الجولات السابقة **/
+function showHistory() {
+    const historyContent = document.getElementById('historyContent');
+    historyContent.innerHTML = state.rounds.map(r => `
+        <div class="history-card">
+            <h4>الجولة ${r.round}</h4>
+            ${r.bye ? `<div class="bye-notice">إعفاء (Bye): ${r.bye.name}</div>` : ''}
+            ${r.games.map(g => `
+                <div class="pairing-row" style="background: white;">
+                    <span>${g.type ? `<b>[${g.type}]</b> ` : ''}${g.black.name}</span>
+                    <span><b>${g.result || 'لم تلعب'}</b></span>
+                    <span>${g.white.name}</span>
+                </div>
+            `).join('')}
+        </div>
+    `).join('');
+    document.getElementById('historyView').classList.remove('hidden');
+    document.getElementById('activeRoundView').classList.add('hidden');
+}
+
+function hideHistory() {
+    document.getElementById('historyView').classList.add('hidden');
+    document.getElementById('activeRoundView').classList.remove('hidden');
+}
+function calculatePerformance(player) {
+    if (!player.opponents || player.opponents.length === 0) return 0;
+
+    let totalOppRating = 0;
+    let playedGames = 0;
+
+    // جمع تقييمات الخصوم الذين لعب معهم فعلياً (تجاهل الـ Bye)
+    state.rounds.forEach(r => {
+        r.games.forEach(g => {
+            let opp = null;
+            if (g.white.id === player.id) opp = state.players.find(p => p.id === g.black.id);
+            else if (g.black.id === player.id) opp = state.players.find(p => p.id === g.white.id);
+            
+            if (opp) {
+                totalOppRating += opp.rating;
+                playedGames++;
+            }
+        });
+    });
+
+    if (playedGames === 0) return 0;
+
+    let avgOppRating = totalOppRating / playedGames;
+    let scorePercentage = player.points / state.currentRoundIdx;
+
+    // جدول توزيع فرق النقاط (FIDE dp table) بشكل مبسط
+    let diff = 0;
+    if (scorePercentage >= 0.5) diff = (scorePercentage - 0.5) * 800; 
+    else diff = (0.5 - scorePercentage) * -800;
+
+    return Math.round(avgOppRating + diff);
+}
+/** التحديث المرئي **/
+function renderUI() {
+    const round = state.rounds[state.currentRoundIdx];
+    if (!round) return;
+    document.getElementById('roundTitle').innerText = `الجولة ${round.round}`;
+    document.getElementById('byeContainer').innerHTML = round.bye ? `<div class="bye-notice">إعفاء (Bye): ${round.bye.name} (+1 نقطة)</div>` : '';
+
+    const container = document.getElementById('pairingsContainer');
+    container.innerHTML = round.games.map((g, i) => `
+        <div class="pairing-row">
+            <span>${g.type ? `<b style="color:var(--accent)">[${g.type}]</b> ` : ''}<b class="badge w">W</b> ${g.white.name} (${g.white.rating})</span>
+            <select onchange="updateResult(${i}, this.value)">
+                <option value="" ${!g.result ? 'selected' : ''}>--</option>
+                <option value="1-0" ${g.result === '1-0' ? 'selected' : ''}>1 - 0</option>
+                <option value="0-1" ${g.result === '0-1' ? 'selected' : ''}>0 - 1</option>
+                ${state.format !== 'cup' ? `<option value="1/2-1/2" ${g.result === '1/2-1/2' ? 'selected' : ''}>½ - ½</option>` : ''}
+                <option value="0-0" ${g.result === '0-0' ? 'selected' : ''}>0 - 0</option>
+            </select>
+            <span>(${g.black.rating}) ${g.black.name} <b class="badge b">B</b></span>
+        </div>
+    `).join('');
+
+    const allFinished = round.games.every(g => g.result);
+    document.getElementById('nextRoundBtn').disabled = !allFinished || state.finished;
+
+    const standings = [...state.players].sort((a, b) => b.points - a.points || b.sbScore - a.sbScore || b.rating - a.rating);
+    document.querySelector('#standingsTable tbody').innerHTML = standings.map((p, i) => {
+        
+        // 1. حساب تقييم الأداء لهذا اللاعب
+        const perfRating = calculatePerformance(p);
+        const perfDisplay = perfRating > 0 ? perfRating : '-';
+
+        return `
+            <tr style="${p.eliminated ? 'color: #999; text-decoration: line-through;' : ''}">
+                <td>${i + 1}</td>
+                <td>${p.name} <span class="site-label">${p.displaySite}</span></td>
+                <td>${p.rating}</td>
+                <td><b>${p.points}</b></td>
+                <td style="color: var(--accent); font-weight: bold;">${perfDisplay}</td>
+                <td>${state.format === 'cup' ? (p.eliminated ? 'مستبعد' : 'مستمر') : p.sbScore.toFixed(2)}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+/** تخزين البيانات **/
+function saveToLocalStorage() {
+    let archive = JSON.parse(localStorage.getItem('chess_v45_final') || '[]');
+    const idx = archive.findIndex(t => t.id === state.id);
+    if (idx > -1) archive[idx] = state; else archive.push(state);
+    localStorage.setItem('chess_v45_final', JSON.stringify(archive));
+}
+
+function manualSave() { saveToLocalStorage(); alert("تم حفظ البطولة بنجاح!"); }
+
+function loadArchive() {
+    let archive = JSON.parse(localStorage.getItem('chess_v45_final') || '[]');
+    showSection('archive');
+    document.getElementById('archiveList').innerHTML = archive.map(t => `
+        <div class="archive-item">
+            <div><strong>${t.name}</strong><br><small>${t.format} - ${t.players.length} لاعبين</small></div>
+            <div>
+                <button class="btn-main" onclick="resumeTourney(${t.id})">فتح</button>
+                <button class="btn-danger" onclick="deleteTourney(${t.id})">حذف</button>
+            </div>
+        </div>
+    `).join('') || "السجل فارغ حالياً.";
+}
+
+function resumeTourney(id) {
+    let archive = JSON.parse(localStorage.getItem('chess_v45_final') || '[]');
+    state = archive.find(t => t.id === id);
+    document.getElementById('displayTourneyName').innerText = state.name;
+    showSection('tournamentArea');
+    renderUI();
+}
+
+function deleteTourney(id) {
+    if(!confirm("هل أنت متأكد من الحذف؟")) return;
+    let arc = JSON.parse(localStorage.getItem('chess_v45_final') || '[]').filter(t => t.id !== id);
+    localStorage.setItem('chess_v45_final', JSON.stringify(arc));
+    loadArchive();
+}
+
+function confirmExit() { if(confirm("العودة للرئيسية؟")) showSection('homeScreen'); }
+
+function exportCSV() {
+    let csv = "\uFEFFالمركز,الاسم,التقييم,النقاط,SB\n";
+    [...state.players].sort((a,b)=>b.points - a.points).forEach((p,i)=> {
+        csv += `${i+1},${p.name},${p.rating},${p.points},${p.sbScore}\n`;
+    });
+    let blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+    let link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${state.name}.csv`;
+    link.click();
+}
+/** 1. Toggle UI Logic **/
+function toggleTransferUI() {
+    const section = document.getElementById('transferSection');
+    section.classList.toggle('hidden');
+}
+
+/** 2. Export Logic: LocalStorage -> JSON File **/
+function exportData() {
+    try {
+        // Fetch your specific data key (e.g., 'chess_v45_final')
+        const data = localStorage.getItem('chess_v45_final');
+        
+        if (!data) {
+            alert("لا توجد بيانات محفوظة لتصديرها.");
+            return;
+        }
+
+        // Create a blob and trigger download
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        
+        const timestamp = new Date().toISOString().slice(0, 10);
+        a.href = url;
+        a.download = `chess_backup_${timestamp}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error("Export failed:", error);
+        alert("حدث خطأ أثناء تصدير البيانات.");
+    }
+}
+
+/** 3. Import Logic: JSON File -> LocalStorage **/
+function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const content = e.target.result;
+            
+            // Validate JSON structure
+            const parsedData = JSON.parse(content);
+            
+            // User Confirmation
+            const confirmImport = confirm("تحذير: الاستيراد سيقوم باستبدال كافة البيانات الحالية. هل أنت متأكد؟");
+            
+            if (confirmImport) {
+                // Update Local Storage
+                localStorage.setItem('chess_v45_final', JSON.stringify(parsedData));
+                alert("تم استيراد البيانات بنجاح! سيتم إعادة تحميل الصفحة لتطبيق التغييرات.");
+                location.reload(); // Refresh to load new data into state
+            }
+        } catch (error) {
+            alert("فشل الاستيراد: الملف المختار غير صالح أو تالف.");
+            console.error("Import Error:", error);
+        }
+    };
+    
+    reader.readAsText(file);
+    // Reset input so the same file can be uploaded twice if needed
+    event.target.value = '';
+}
+</script>
+</body>
+</html>
