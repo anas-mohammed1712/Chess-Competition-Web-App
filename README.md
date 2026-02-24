@@ -1,56 +1,56 @@
-ProChess Manager v4.5 - Professional Edition
-ProChess Manager is a comprehensive, standalone web application designed for chess tournament organizers, club managers, and trainers. It streamlines the management of players, tournaments, matches, and financial records within a single, intuitive interface.
+#ProChess Manager v4.5 - Professional Edition
+##ProChess Manager is a comprehensive, standalone web application designed for chess tournament organizers, club managers, and trainers. It streamlines the management of players, tournaments, matches, and financial records within a single, intuitive interface.
 
-🚀 Key Features
-Player Database: Track names, levels (Grandmaster to Beginner), and performance.
+#🚀 Key Features
+##- Player Database: Track names, levels (Grandmaster to Beginner), and performance.
 
-Tournament Scheduling: Organize multiple tournaments with status tracking (Planned, Ongoing, Completed).
+##- Tournament Scheduling: Organize multiple tournaments with status tracking (Planned, Ongoing, Completed).
 
-Match Management: Log individual matches, results, and duration.
+##- Match Management: Log individual matches, results, and duration.
 
-Financial Tracking: Monitor income and expenses with an automated balance summary.
+##- Financial Tracking: Monitor income and expenses with an automated balance summary.
 
-Data Persistence: Integrated with Browser Local Storage—your data stays on your device even after a refresh.
+##- Data Persistence: Integrated with Browser Local Storage—your data stays on your device even after a refresh.
 
-Import/Export: Export your entire database to a JSON file for backups or moving to another device.
+##- Import/Export: Export your entire database to a JSON file for backups or moving to another device.
 
-Responsive UI: A clean, RTL-supported (Right-to-Left) design optimized for professional use.
+##- Responsive UI: A clean, RTL-supported (Right-to-Left) design optimized for professional use.
 
-📋 Prerequisites
-As a Single File Application (SFA), the requirements are minimal:
+#📋 Prerequisites
+##As a Single File Application (SFA), the requirements are minimal:
 
-Any modern web browser (Google Chrome, Firefox, Microsoft Edge, Safari).
+##- Any modern web browser (Google Chrome, Firefox, Microsoft Edge, Safari).
 
-No installation, no database servers, and no internet connection required to run.
+##- No installation, no database servers, and no internet connection required to run.
 
-💻 How to Use (Detailed Guide)
-1. Getting Started
+#💻 How to Use (Detailed Guide)
+##1. Getting Started
 Simply open the Chess manager.html file in your browser. You will see a clean dashboard divided into functional sections.
 
-2. Managing Players
-Scroll to the "إدارة اللاعبين" (Player Management) section.
+##2. Managing Players
+##Scroll to the "إدارة اللاعبين" (Player Management) section.
 
-Enter the player's name and select their skill level.
+##Enter the player's name and select their skill level.
 
-Click "إضافة لاعب" (Add Player).
+##Click "إضافة لاعب" (Add Player).
 
-The list below will update instantly, allowing you to delete players if needed.
+##The list below will update instantly, allowing you to delete players if needed.
 
-3. Organizing Tournaments
-In the "إدارة البطولات" (Tournament Management) section, enter the tournament name, date, and current status.
+##3. Organizing Tournaments
+##In the "إدارة البطولات" (Tournament Management) section, enter the tournament name, date, and current status.
 
-Click "إضافة بطولة" (Add Tournament).
+##Click "إضافة بطولة" (Add Tournament).
 
-Use this to keep a history of upcoming and past events.
+##Use this to keep a history of upcoming and past events.
 
-4. Logging Matches
-Select a tournament from the dropdown.
+##4. Logging Matches
+##Select a tournament from the dropdown.
 
-Pick Player 1 and Player 2 from your registered player list.
+##Pick Player 1 and Player 2 from your registered player list.
 
-Set the result (e.g., White Win, Black Win, or Draw).
+##Set the result (e.g., White Win, Black Win, or Draw).
 
-Click "تسجيل المباراة" (Register Match). Matches are listed at the bottom for review.
+##Click "تسجيل المباراة" (Register Match). Matches are listed at the bottom for review.
 
 5. Financial Management
 Use the "السجل المالي" (Financial Ledger) to track club finances.
